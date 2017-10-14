@@ -1,0 +1,30 @@
+#pull
+FROM debian
+MAINTAINER Nils Rohde
+EXPOSE 80
+#VOLUME ["/var/lib/mysql"]
+VOLUME ["/var/www"]
+RUN apt update 
+RUN apt -y upgrade
+RUN echo "mysql-server-5.6 mysql-server/root_password password TOTALLYLEGITPASSWORD" | debconf-set-selections
+RUN echo "mysql-server-5.6 mysql-server/root_password_again password TOTALLYLEGITPASSWORD" | debconf-set-selections
+RUN apt install -y apache2 mysql-server php5 libapache2-mod-php5 php5-mcrypt php5-mysql
+#TODO: Remove from global dockerfile only needed for joomla
+RUN apt install php5-gd
+ADD ./assets/run.sh /root/run.sh
+#RUN sed 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+RUN a2enmod rewrite
+RUN service apache2 stop
+RUN rm /etc/apache2/apache2.conf
+ADD ./assets/apache2.conf /etc/apache2/apache2.conf
+#############TODO ADD SEC HERE#########
+RUN echo "ServerTokens ProductOnly" >> /etc/apache2/apache2.conf
+RUN echo "ServerSignature Off" >> /etc/apache2/apache2.conf
+######################################
+RUN service mysql stop
+RUN mkdir /tmp/database
+RUN cp -rp /var/lib/mysql/* /tmp/database/
+RUN ls -la /var/lib/mysql/
+RUN ls -la /tmp/database/
+VOLUME ["/var/lib/mysql"]
+ENTRYPOINT ["/bin/bash", "/root/run.sh"]
